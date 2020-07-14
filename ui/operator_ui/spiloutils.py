@@ -1,8 +1,9 @@
+import sys
 from boto3 import client
 from datetime import datetime, timezone
 from furl import furl
 from json import dumps, loads
-from logging import getLogger
+from logging import DEBUG, ERROR, INFO, basicConfig, exception, getLogger
 from os import environ, getenv
 from requests import Session
 from urllib.parse import urljoin
@@ -11,9 +12,7 @@ from wal_e.cmd import configure_backup_cxt
 
 from .utils import Attrs, defaulting, these
 
-
 logger = getLogger(__name__)
-
 session = Session()
 
 OPERATOR_CLUSTER_NAME_LABEL = getenv('OPERATOR_CLUSTER_NAME_LABEL', 'cluster-name')
@@ -21,12 +20,15 @@ OPERATOR_CLUSTER_NAME_LABEL = getenv('OPERATOR_CLUSTER_NAME_LABEL', 'cluster-nam
 COMMON_CLUSTER_LABEL = getenv('COMMON_CLUSTER_LABEL', '{"application":"spilo"}')
 COMMON_POOLER_LABEL = getenv('COMMONG_POOLER_LABEL', '{"application":"db-connection-pooler"}')
 
-logger.info("Common Cluster Label: {}".format(COMMON_CLUSTER_LABEL))
-logger.info("Common Pooler Label: {}".format(COMMON_POOLER_LABEL))
+#logger.info("Common Cluster Label: {}".format(COMMON_CLUSTER_LABEL))
+#logger.info("Common Pooler Label: {}".format(COMMON_POOLER_LABEL))
 
 COMMON_CLUSTER_LABEL = loads(COMMON_CLUSTER_LABEL)
 COMMON_POOLER_LABEL = loads(COMMON_POOLER_LABEL)
 
+S3_ENDPOINT_URL = getenv('S3_ENDPOINT_URL')
+S3_ACCESS_KEY = getenv('S3_ACCESS_KEY')
+S3_ACCESS_SECRET = getenv('S3_ACCESS_SECRET')
 
 def request(cluster, path, **kwargs):
     if 'timeout' not in kwargs:
@@ -266,7 +268,8 @@ def read_stored_clusters(bucket, prefix, delimiter='/'):
     return [
         prefix['Prefix'].split('/')[-2]
         for prefix in these(
-            client('s3').list_objects(
+            client('s3', None, None, True, None, S3_ENDPOINT_URL,
+                   S3_ACCESS_KEY,  S3_ACCESS_SECRET).list_objects(
                 Bucket=bucket,
                 Delimiter=delimiter,
                 Prefix=prefix,
@@ -287,7 +290,8 @@ def read_versions(
     return [
         'base' if uid == 'wal' else uid
         for prefix in these(
-            client('s3').list_objects(
+            client('s3', None, None, True, None, S3_ENDPOINT_URL,
+                   S3_ACCESS_KEY, S3_ACCESS_SECRET).list_objects(
                 Bucket=bucket,
                 Delimiter=delimiter,
                 Prefix=prefix + pg_cluster + delimiter,

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # pylama:ignore=E402
+import sys
+from logging import DEBUG, ERROR, INFO, basicConfig, exception, getLogger
 
 import gevent.monkey
 
@@ -7,7 +9,6 @@ gevent.monkey.patch_all()
 
 import requests
 import tokens
-import sys
 
 from backoff import expo, on_exception
 from click import ParamType, command, echo, option
@@ -29,7 +30,6 @@ from gevent import sleep, spawn
 from gevent.pywsgi import WSGIServer
 from jq import jq
 from json import dumps, loads
-from logging import DEBUG, ERROR, INFO, basicConfig, exception, getLogger
 from os import getenv
 from re import X, compile
 from requests.exceptions import RequestException
@@ -1037,8 +1037,8 @@ def init_cluster():
 def main(port, secret_key, debug, clusters: list):
     global TARGET_NAMESPACE
 
-    basicConfig(stream=sys.stdout, level=(DEBUG if debug else INFO), format='%(asctime)s %(levelname)s: %(message)s',)
-
+    basicConfig(force=True, stream=sys.stdout, level=(DEBUG if debug else INFO),
+                format='%(asctime)s %(levelname)s: %(message)s', )
     init_cluster()
 
     logger.info(f'Access token URL: {ACCESS_TOKEN_URL}')
